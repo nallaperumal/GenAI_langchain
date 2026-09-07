@@ -1,4 +1,4 @@
 langchain_openai
 dotenv
 langchain-text-splitters
-sentence-transformers
+openai

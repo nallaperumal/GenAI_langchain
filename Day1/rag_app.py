@@ -1,5 +1,8 @@
 from FileManager import FileManager
 from EmbeddingManager import EmbeddingManager
+from dotenv import load_dotenv
+
+load_dotenv()
 
 context_bun = ""
 
