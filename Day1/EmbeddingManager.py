@@ -1,7 +1,17 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, util
 
 class EmbeddingManager:
+    def __init__(self):
+        print("init")
+        self.embeddings = []
+
+    def compute_cosing_similarity(self, srchtext: str):
+        model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")  
+        search_txt_as_embdding = model.encode(srchtext)
+        print(f"...{srchtext}'s embedding is  {search_txt_as_embdding[:3]} ({len(search_txt_as_embdding)})")
+        similarities = util.cos_sim(search_txt_as_embdding, self.embeddings )
+        print(f"... similarities: {similarities}")
 
     def GetChunks(self, full_content:str):
         
@@ -16,6 +26,6 @@ class EmbeddingManager:
 
     def convert_txt_to_embed(self, chunks):
         model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-        embeddings  = model.encode(chunks)
-        for emb in embeddings:
+        self.embeddings  = model.encode(chunks)
+        for emb in self.embeddings:
             print(f"len is....{len(emb)}.. sample {emb[:3]}")
