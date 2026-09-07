@@ -1,8 +1,10 @@
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain.messages import HumanMessage, AIMessage, SystemMessage
+from langfuse.langchain import CallbackHandler
 
 load_dotenv()
+langfuse_callback = CallbackHandler()
 
 llm = ChatOpenAI(
     model="gpt-5.6-luna",
@@ -12,12 +14,14 @@ llm = ChatOpenAI(
 )
 
 conversation = [
-    SystemMessage("You are a software expert. Answer precisely in 2 sentence"),
-    HumanMessage("In which programming language was bun written?"),
-    AIMessage("Bun is written in zig"),
-    HumanMessage("Was it rewritten in rust?")
+    {"role" : "system", "content": "You are a software expert. Answer precisely in 2 sentence"},
+    {"role" : "user", "content": "In which programming language was bun written?"},
+    {"role" : "assistant", "content": "Bun is written in zig"},
+    {"role" : "user", "content": "Was it rewritten in rust?"}
 ]
 
-response = llm.invoke(conversation)
+response = llm.invoke(conversation, config ={
+    "callbacks" : [langfuse_callback]
+})  
 
 print(response.content)
