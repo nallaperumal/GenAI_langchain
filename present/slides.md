@@ -1,239 +1,310 @@
 ---
-layout: fact
----
 
-# Welcome to Gen AI 
+# LCEL Langchain
 
----
+--- 
 
 # Agenda
 
 <v-clicks>
 
-- Basics of LLM
-- A Case Study
-- Setting up Python environment
-- Openai with python samples
-- Semantic search 
-- Hybrid search
-</v-clicks>
-
----
-layout: fact
----
-
-# Coding needed?
-
----
-
-# Why Coding Needed?
-
-<v-clicks>
-
-- Technical debt
-- Hallucination in production
-- Token cost
-- Ability the judge the quality of code
-
-</v-clicks>
----
-
-# Case Study 
-
-
-<v-clicks>
-
-- what is Bun (Software)?
-- It is Software runtime similar to Nodejs
-- It works with Javscript/TypeScript
-- Super fast
-- Written on Zig
-- Rewritten in Rust in May 2026
-- With around 64 agents in just 11 days 
-- 6500 commits costing 1,65,000 USD
+- LCEL intro
+- Combining RAG and langchain
+- Middleware 
+- Langgraph
 
 </v-clicks>
 
 ---
 
-# LLM
+# Chroma db Init
 
-<v-clicks>
-
-- AI is not new
-- Attention is all you need
-- Transformer Architecture
-- Temperature and top k
-- Refer [here](https://poloclub.github.io/transformer-explainer/)
-- and [here](https://bbycroft.net/llm)
-
-</v-clicks>
-
----
-
-# Tools
-
-<v-clicks>
-
-- Langchain
-- Langfuse
-- Chromadb
-
-</v-clicks>
-
----
-
-# Langfuse
-
-<v-clicks>
-
-- Observability
-- Traceability
-- Test/evaluate
-- Opensource
-
-</v-clicks>
-
----
-
-# Let's code
-
-- Libraries
-```md
-langchain_openai
-dotenv
-```
-
-- Installation
-
-```sh
-pip install -r requirements.txt
-```
-
-- Environment creation
-```sh
-python -m venv my_env
-my_env\Scripts\activate
-```
-- .env
-```md {1|2-|*}  
-OPENAI_API_KEY=sk....
-
-LANGFUSE_SECRET_KEY="sk..."
-LANGFUSE_PUBLIC_KEY="pk..."
-LANGFUSE_BASE_URL="https://cloud.langfuse.com"
-
+```py {lines:true}
+class EmbeddingManager:
+    def __init__(self):
+        self.embeddings = OpenAIEmbeddings(
+            model="text-embedding-3-small"
+        )
+        self.vectorstore = Chroma(
+            collection_name="my_documents",
+            embedding_function=self.embeddings,
+            persist_directory="./chroma_db"
+        )
+        self.chunk_list = []
 ```
 
 ---
 
-```py {1,4|2,6-8|10-|*} {lines:true}
-from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
+# Retriever
 
-load_dotenv()
-
-llm = ChatOpenAI(
-    model="gpt-5.6-luna",
-)
-
-response = llm.invoke("what is bun framework in Software?")
-
-print(response.content)
+```py {1|*|2-6|7-|*} {lines:true}
+def search(self, srch_text: str, k=3):
+    vector_retriever = self.vectorstore.as_retriever(
+            search_kwargs={
+                "k": k
+            }
+        )
+    results = vector_retriever.invoke(srch_text)
+    return results    
 ```
 
 ---
-layout: fact
+
+# Sparse retriever 
+
+```py {1|2-|*} {lines:true}
+def search(self, srch_text: str, k=3):
+        bm25_retriever = BM25Retriever.from_texts(self.chunk_list)
+        bm25_retriever.k = k
+```
+
 ---
 
-# RAG
+# Hybrid Retriever
+
+```py {2-7|9-18|19-|*} {lines:true}
+def search(self, srch_text: str, k=3):
+        bm25_retriever = BM25Retriever.from_texts(self.chunk_list)
+        bm25_retriever.k = k
+        vector_retriever = self.vectorstore.as_retriever(
+                search_kwargs={
+                    "k": k
+                }
+            )
+        hybrid_retriever = EnsembleRetriever(
+            retrievers=[
+                vector_retriever,
+                bm25_retriever
+            ],
+            weights=[
+                0.7,
+                0.3
+            ]
+        )
+        results = hybrid_retriever.invoke(srch_text)
+        return results[:k] 
+```
 
 ---
 
-# Reading comprehension
+# Chunking optimization
+
+```py {1-6|7-10|11-18|19-|*} {lines:true}
+def split_to_chunks(self, full_text):
+    text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=360,
+            chunk_overlap=30,
+            separators=["\n## ", "\n### ", "\n\n", "\n", " ", ""]
+        )
+    import re
+    pattern = r"(.*?)(```[\s\S]*?```|$)"
+    chunks = []
+    matches = re.finditer(pattern, full_text, re.DOTALL)
+    for match in matches:
+        prose = match.group(1).strip()
+        code_block = match.group(2).strip()
+        if prose:
+            prose_chunks = text_splitter.split_text(prose)
+            chunks.extend([c for c in prose_chunks if c.strip()])
+        if code_block:
+            chunks.append(code_block)
+
+    self.chunk_list = chunks
+    return self.chunk_list
+```        
+
+---
+
+# Reranking
 
 <v-clicks>
 
-- Passage with 3 or 4 paragraphs
-- 4 or 5 questions given
-- Quesions can be simple or tricky
+- Improves accuracy
+- Improves the relevance sorting
+- full cross attention between every text and word 
 
 </v-clicks>
 
 ---
 
-# Challenges in RAG
+# Code sample
 
-<v-clicks>
+```sh {1-14|12-|*} {lines:true}
+from langchain_community.retrievers import BM25Retriever
+...
 
-- Huge content
-- Cost of tokens
-- Hallucinations with large data
+class EmbeddingManager:
 
-</v-clicks>
+  def search(self, srch_text: str, k=3):
+    bm25_retriever = BM25Retriever.from_texts(self.chunk_list)
+    bm25_retriever.k = fetch_k
+    vector_retriever = self.vectorstore.as_retriever(
+        search_kwargs={"k": fetch_k}
+    )
+    hybrid_retriever = EnsembleRetriever(
+        retrievers=[vector_retriever, bm25_retriever], weights=[0.7, 0.3]
+    )
+    compressor = CohereRerank(
+        model="rerank-english-v3.0", top_n=k
+    )  # Requires COHERE_API_KEY environment variable
+    rerank_retriever = ContextualCompressionRetriever(
+        base_compressor=compressor, base_retriever=hybrid_retriever
+    )
+    results = rerank_retriever.invoke(srch_text)
+    return results
 
----
+  def split_to_chunks(self, full_text):
+    ...
+    return self.chunk_list
 
-# Steps involved in RAG
+  def convert_chunks_to_embeddings(self, chunk_list):
+    self.vectorstore.add_texts(texts=chunk_list)
 
-<v-clicks>
-
-- Chunking
-- Embedding Conversion
-- Retrieval (or Hybrid Search)
-- Context setup
-
-</v-clicks>
-
----
-
-# Chunking Strategy
-
-<v-clicks>
-
-- Fixed Size Chunking
-- Recursive chunking
-- Document structure aware-chunking
-- Semantic Chunking
-- Agentic chunking
-
-</v-clicks>
+```
 
 ---
 
-# Embeddings
+# Retrieved result
 
-<v-clicks>
-
-- Non-deterministic
-- Similarty rather than equality
-- Dimensionality
-- Cosine similarity/euclidean distance 
-
-</v-clicks>
-
----
-
-# Choosing the right embeddings
-
-<v-clicks>
-
-- Open source sentence transformers
-- Open AI sentence transformers
-- Cohere Embddings 
-- Google Embeddings 2
-
-</v-clicks>
-
+```json
+[
+    Document(
+        page_content="Text content of chunk 1...",
+        metadata={"source": "doc1.txt"}  # Any metadata attached to the chunk
+    ),
+    Document(
+        page_content="Text content of chunk 2...",
+        metadata={"source": "doc2.txt"}
+    )
+]
+```
 
 ---
 
-# Retrieval
+# Rernked Retrieved result
+
+```json
+[
+    Document(
+        page_content="Text content of chunk 1...",
+        metadata={"source": "doc1.txt", "relevance_score": 0.9841203}  # Any metadata attached to the chunk
+    ),
+    Document(
+        page_content="Text content of chunk 2...",
+        metadata={"source": "doc2.txt","relevance_score": 0.868337}
+    )
+]
+```
+
+
+---
+
+# Ford motors
 
 <v-clicks>
 
-- Dense retieval (Semantic)
-- Sparse retrieval (BM26 type)
-- Hybrid retrieval
+- First company failed
+- Producion Speed matters
+- Assembly line was introduced
+- LCEL is similar 
 
 </v-clicks>
+
+
+
+---
+
+# Langchain (before LCEL)
+
+- Varied function for different process
+- 1000s of function
+- Bloate SDKs
+
+---
+
+# LCEL
+
+- Runnable
+
+```py
+chain =  Runnablepassthrough | llm | stroutputparser
+
+chain.invoke()
+```
+
+---
+
+# include langfuse session
+
+```py
+response = llm.invoke(user_msg, 
+                          config = {
+                              "callbacks":[langfuse_handler],
+                              "metadata":
+                                {
+                                "langfuse_session_id":"Bun sesssion_1",
+                                "langfuse_user_id": "nalla"
+                                }
+                              }
+                          )
+```
+
+---
+
+# Without LCEL
+
+```py
+from langchain_core.prompts import ChatPromptTemplate
+
+ctxt_txt = "The bun is rewritten completely with rust instead of zig. This was done in 11 days with 65 bots and an expense of 1,64,000 USD."
+
+prompt_template = ChatPromptTemplate([("human","with the available context : {context}.\n provide the response for {question}")])
+prompt = prompt_template.invoke({"context":ctxt_txt, "question":user_msg})
+response = llm.invoke(prompt, config ...) 
+```
+
+---
+
+# With LCEL
+
+```
+from langchain_core.output_parsers import StrOutputParser
+
+chain = prompt_template | llm | StrOutputParser()
+resp = chain.invoke({"context":ctxt_txt, "question":user_msg})
+```
+
+---
+
+# Structured output
+
+```py
+from pydantic import BaseModel, Field
+
+class DesiredResponse(BaseModel):
+    answer: str = Field(description="Direct answer based strictly on the provided context")
+    confidence: float = Field(description="Confidence level: 0 to 5")
+    found_in_context: bool = Field(description="True if context contains the answer, False otherwise")
+
+structured_llm = llm.with_structured_output(DesiredResponse)
+...
+
+chain = prompt_template | structured_llm | StrOutputParser()
+```
+
+---
+
+# guard rails
+
+```py 
+def execute_guarded_chain(resp: QA_KensingtonResponse):
+    if resp.confidence < 0.6:
+        resp.answer = "I am unable to answer this question based strictly on the provided context."
+        resp.found_in_context = False
+    return resp
+...
+chain =  conversation_template | structured_llm | RunnableLambda(execute_guarded_chain)
+
+print(response.answer)
+print(response.found_in_context)
+```
