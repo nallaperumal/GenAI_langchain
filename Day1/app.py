@@ -7,6 +7,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from pydantic import BaseModel, Field
 from langchain_core.runnables import RunnableLambda
+from FileManager import FileManager
+from EmbeddingManager import EmbeddingManager
 
 load_dotenv()
 langfuse_callback = CallbackHandler()
@@ -22,7 +24,17 @@ llm = ChatOpenAI(
 num = random.randint(1000, 10100)
 session_id= f"session_{num}"
 
-ctxt_txt = "The bun is rewritten completely with rust instead of zig. This was done in 11 days with 65 bots and an expense of 1,64,000 USD."
+context_bun = ""
+
+fileMan  = FileManager()
+context_bun = fileMan.ReadFromFile()
+embedMan = EmbeddingManager()
+
+chunk_list = embedMan.GetChunks(context_bun)
+embedMan.convert_txt_to_embed(chunk_list)
+res = embedMan.search("what is bun?")
+
+ctxt_txt = "\n".join([txt.page_content for txt in res])
 
 prompt_template = ChatPromptTemplate([("human","with the available context : {context}.\n provide the response for {question}")])
 
