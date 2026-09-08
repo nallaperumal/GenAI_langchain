@@ -1,6 +1,8 @@
 ---
+layout: fact
+---
 
-# LCEL Langchain
+# Langchain
 
 --- 
 
@@ -8,6 +10,7 @@
 
 <v-clicks>
 
+- Retrieval
 - LCEL intro
 - Combining RAG and langchain
 - Middleware 
