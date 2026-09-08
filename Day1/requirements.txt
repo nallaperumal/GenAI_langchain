@@ -4,3 +4,4 @@ dotenv
 langchain-text-splitters
 openai
 langfuse
+langchain-chroma
