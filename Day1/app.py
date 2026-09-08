@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain.messages import HumanMessage, AIMessage, SystemMessage
 from langfuse.langchain import CallbackHandler
+import random
 
 load_dotenv()
 langfuse_callback = CallbackHandler()
@@ -20,8 +21,15 @@ conversation = [
     {"role" : "user", "content": "Was it rewritten in rust?"}
 ]
 
+num = random.randint(1000, 10100)
+session_id= f"session_{num}"
+
 response = llm.invoke(conversation, config ={
-    "callbacks" : [langfuse_callback]
+    "callbacks" : [langfuse_callback],
+    "metadata" :{
+        "langfuse_session_id" : session_id,
+        "langfuse_user_id" :  "nalla"
+    }
 })  
 
 print(response.content)
