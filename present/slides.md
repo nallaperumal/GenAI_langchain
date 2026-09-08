@@ -311,3 +311,52 @@ chain =  conversation_template | structured_llm | RunnableLambda(execute_guarded
 print(response.answer)
 print(response.found_in_context)
 ```
+
+---
+
+# RAG and LCEL
+
+```py
+context_bun = ""
+
+fileMan  = FileManager()
+context_bun = fileMan.ReadFromFile()
+embedMan = EmbeddingManager()
+
+chunk_list = embedMan.GetChunks(context_bun)
+embedMan.convert_txt_to_embed(chunk_list)
+res = embedMan.search("what is bun?")
+
+ctxt_txt = "\n".join([txt.page_content for txt in res])
+```
+
+---
+
+# Dual context
+
+```py
+res1 = embedMan.search("what is bun?", 3)
+res2 = embedMan.search("what is bun?", 5)
+
+ctxt_txt1 = "\n".join([txt.page_content for txt in res1])
+ctxt_txt2 = "\n".join([txt.page_content for txt in res2])
+```
+
+---
+
+# Parallel chain
+
+```py
+# resp = chain.invoke({'context': ctxt_txt, 'question':"what is bun?"})
+parallel_chain = RunnableParallel(
+    resp1 = RunnableLambda(lambda x: chain.invoke({'context': x['ctxt1'], 'question': x['question']})),
+    resp2 = RunnableLambda(lambda x: chain.invoke({'context': x['ctxt2'], 'question': x['question']}))
+    )
+
+
+resp = parallel_chain.invoke({
+        'ctxt1': ctxt_txt1,
+        'ctxt2': ctxt_txt2,
+        'question': "what is bun?"
+    })
+```
