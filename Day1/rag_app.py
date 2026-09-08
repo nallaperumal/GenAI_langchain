@@ -12,9 +12,11 @@ embedMan = EmbeddingManager()
 
 chunk_list = embedMan.GetChunks(context_bun)
 embedMan.convert_txt_to_embed(chunk_list)
+res = embedMan.search("what is bun?")
 print(f"number of chunks is {len(chunk_list)}")
+print(f"search res:... {res}")
 
-embedMan.compute_cosing_similarity("How long did it take for rewrite?")
+# embedMan.compute_cosing_similarity("How long did it take for rewrite?")
 
 # for each_chunk in chunk_list:
 #     print(each_chunk)
