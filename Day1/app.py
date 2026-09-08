@@ -6,7 +6,7 @@ import random
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from pydantic import BaseModel, Field
-from langchain_core.runnables import RunnableLambda
+from langchain_core.runnables import RunnableLambda, RunnableParallel
 from FileManager import FileManager
 from EmbeddingManager import EmbeddingManager
 
@@ -32,9 +32,11 @@ embedMan = EmbeddingManager()
 
 chunk_list = embedMan.GetChunks(context_bun)
 embedMan.convert_txt_to_embed(chunk_list)
-res = embedMan.search("what is bun?")
+res1 = embedMan.search("what is bun?", 3)
+res2 = embedMan.search("what is bun?", 5)
 
-ctxt_txt = "\n".join([txt.page_content for txt in res])
+ctxt_txt1 = "\n".join([txt.page_content for txt in res1])
+ctxt_txt2 = "\n".join([txt.page_content for txt in res2])
 
 prompt_template = ChatPromptTemplate([("human","with the available context : {context}.\n provide the response for {question}")])
 
@@ -53,8 +55,18 @@ def execute_guarded_chain(resp: DesiredResponse):
 
 chain = prompt_template | structured_llm | RunnableLambda(execute_guarded_chain)
 
+# resp = chain.invoke({'context': ctxt_txt, 'question':"what is bun?"})
+parallel_chain = RunnableParallel(
+    resp1 = RunnableLambda(lambda x: chain.invoke({'context': x['ctxt1'], 'question': x['question']})),
+    resp2 = RunnableLambda(lambda x: chain.invoke({'context': x['ctxt2'], 'question': x['question']}))
+    )
 
-resp = chain.invoke({'context': ctxt_txt, 'question':"what is bun?"}, config ={
+resp = parallel_chain.invoke({
+        'ctxt1': ctxt_txt1,
+        'ctxt2': ctxt_txt2,
+        'question': "what is bun?"
+    },
+    config ={
     "callbacks" : [langfuse_callback],
     "metadata" :{
         "langfuse_session_id" : session_id,

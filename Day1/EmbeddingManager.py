@@ -26,8 +26,8 @@ class EmbeddingManager:
         print(f"... similarities: {similarities}")
     def GetChunks(self, full_content:str):        
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size = 1500,
-            chunk_overlap = 150,
+            chunk_size = 300,
+            chunk_overlap = 60,
             separators = ["\n##", "\n###", "\n\n"," ", ""]
         )
         chunk_list = [chunk for chunk in text_splitter.split_text(full_content)] 
