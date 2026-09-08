@@ -408,6 +408,20 @@ resp = parallel_chain.invoke({
 }
 </style>
 
+---
+
+# langraph
+
+```py
+pip install langgraph
+```
+
+```py
+from langgraph.graph import StateGraph, START, END
+from langfuse.langchain import CallbackHandler
+from langfuse import get_client
+```
+
 --- 
 
 # langgraph
