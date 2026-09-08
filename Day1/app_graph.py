@@ -1,6 +1,10 @@
 from typing import TypedDict
 from langgraph.graph import StateGraph, START, END
 from langfuse.langchain import CallbackHandler
+from langfuse import get_client
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Step 1: Define the shared State that moves through the graph
 class AgentState(TypedDict):
@@ -54,3 +58,5 @@ final_state = app.invoke(initial_input, config ={
 
 print("\n--- Final Graph Output ---")
 print(final_state)
+
+get_client().flush()
