@@ -407,3 +407,105 @@ resp = parallel_chain.invoke({
   line-height: 1.5 !important;
 }
 </style>
+
+--- 
+
+# langgraph
+
+```py
+class AgentState(TypedDict):
+    text: str
+    steps_taken: list[str]
+
+def upper_case_node(state: AgentState) -> dict:
+    print("-> Processing in Upper Case Node")
+    return {
+        "text": state["text"].upper(),
+        "steps_taken": ["converted_to_uppercase"]
+    }
+
+def exclaim_node(state: AgentState) -> dict:
+    print("-> Processing in Exclaim Node")
+    # LangGraph automatically merges dictionary updates back into the state
+    return {
+        "text": f"{state['text']}!!!",
+        "steps_taken": state["steps_taken"] + ["added_exclamation"]
+    }
+
+
+```
+
+---
+
+# Add nodes
+
+```py
+
+# Step 3: Initialize the Graph Builder with the state schema
+builder = StateGraph(AgentState)
+
+# Step 4: Add nodes to the graph
+builder.add_node("make_uppercase", upper_case_node)
+builder.add_node("add_exclamation", exclaim_node)
+```
+
+
+---
+
+# Add nodes
+
+```py
+
+# Step 3: Initialize the Graph Builder with the state schema
+builder = StateGraph(AgentState)
+
+# Step 4: Add nodes to the graph
+builder.add_node("make_uppercase", upper_case_node)
+builder.add_node("add_exclamation", exclaim_node)
+```
+
+---
+
+# Add edge
+
+```py
+
+# Step 5: Define the Edges (the control flow)
+builder.add_edge(START, "make_uppercase")        # Start -> node 1
+builder.add_edge("make_uppercase", "add_exclamation") # Node 1 -> Node 2
+builder.add_edge("add_exclamation", END)          # Node 2 -> End
+
+```
+
+---
+
+# Run the graph
+
+```py
+
+# Step 6: Compile the workflow into a runnable app
+app = builder.compile()
+
+# Step 7: Invoke the graph with an initial state
+initial_input = {"text": "hello langgraph", "steps_taken": []}
+final_state = app.invoke(initial_input, config ={
+    "callbacks" : [langfuse_callback],
+    "metadata" :{
+        "langfuse_session_id" : "graph_sess",
+        "langfuse_user_id" :  "nalla_chain"
+    }
+})
+
+print("\n--- Final Graph Output ---")
+print(final_state)
+```
+
+---
+
+# langfuse
+
+```py
+from langfuse import get_client
+
+get_client().flush()
+```
