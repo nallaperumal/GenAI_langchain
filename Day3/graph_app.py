@@ -57,6 +57,7 @@ def fetch_inventory_data(flavour_name: str) -> str:
 preference_llm = ChatOpenAI( model="gpt-5.6-luna", reasoning_effort="none")
 inventory_llm = ChatOpenAI( model="gpt-5.6-luna", reasoning_effort="none")
 federated_llm = ChatOpenAI( model="gpt-5.6-luna", reasoning_effort="none")
+flavour_xtract_llm = ChatOpenAI( model="gpt-5.6-luna", reasoning_effort="none")
 
 preference_llm_with_tools = preference_llm.bind_tools([fetch_user_preference])
 inventory_llm_with_tools = inventory_llm.bind_tools([fetch_inventory_data])
@@ -112,12 +113,41 @@ def preference_router(state: AgentState):
     print("\nROUTER: No preference available -> END")
     return "end"
 
+def xtract_flavour_node(state: AgentState):    
+    messages = state["messages"]
+    last_message = messages[-1]
+    tool_result = last_message.content
+    messages_to_send = [
+            {
+                "role": "system",
+                "content": """
+                            You are the cake flavour extractor LLM.
+                            From the sentence, you extract the flavour name alone in one word
+                            """
+            },
+            {
+                "role": "user",
+                "content": f"""Find the cake flavour from:{tool_result}"""
+            }
+        ]
+    response = preference_llm_with_tools.invoke(
+        messages_to_send
+    )
+    print("\nPreference LLM response:")
+    print(response)
+
+    return {
+        "messages": [response],
+        "desired_flavour": response.content
+    }
+
 preference_tool_node = ToolNode([fetch_user_preference])
 inventory_tool_node = ToolNode([fetch_inventory_data])
 
 builder = StateGraph(AgentState)
 builder.add_node("pref_llm", preference_llm_node)
 builder.add_node("pref_tool", preference_tool_node)
+builder.add_node("xtract_flav", xtract_flavour_node)
 
 builder.add_edge(START, "pref_llm")
 builder.add_conditional_edges(
@@ -128,7 +158,8 @@ builder.add_conditional_edges(
         "end" : END
     }
 )
-builder.add_edge("pref_tool", END)
+builder.add_edge("pref_tool", "xtract_flav")
+builder.add_edge("xtract_flav", END)
 
 app = builder.compile()
 
@@ -140,7 +171,7 @@ final_state = app.invoke(initial_input,
         "langfuse_session_id" : session_id,
         "langfuse_user_id" :  "nalla_chain"
     }})
-
+print("\n\n...........\n\n")
 print(final_state)
 get_client().flush()
 

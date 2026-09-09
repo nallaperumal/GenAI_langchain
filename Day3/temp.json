@@ -6,9 +6,9 @@
             additional_kwargs={"refusal": None},
             response_metadata={
                 "token_usage": {
-                    "completion_tokens": 21,
+                    "completion_tokens": 28,
                     "prompt_tokens": 223,
-                    "total_tokens": 244,
+                    "total_tokens": 251,
                     "completion_tokens_details": {
                         "accepted_prediction_tokens": 0,
                         "audio_tokens": 0,
@@ -27,25 +27,25 @@
                 "model_provider": "openai",
                 "model_name": "gpt-5.6-luna",
                 "system_fingerprint": None,
-                "id": "chatcmpl-EM4c5w4XoPGvLwTlwNaEIhWwI9urH",
+                "id": "chatcmpl-EM54yAr7nXkfMbrIbZPuigaP0GusU",
                 "service_tier": "default",
                 "finish_reason": "tool_calls",
                 "logprobs": None,
             },
-            id="lc_run--01a08484-6e63-79c0-89a5-8a5c232cb69a-0",
+            id="lc_run--01a0849f-c816-7130-83ff-f015650ea3dd-0",
             tool_calls=[
                 {
                     "name": "fetch_user_preference",
                     "args": {"user_name": "nickith"},
-                    "id": "call_ystjHZxTvPCfh3BuKUpYnGLM",
+                    "id": "call_AEsim0UxLbtxdgGG0SSI70Lj",
                     "type": "tool_call",
                 }
             ],
             invalid_tool_calls=[],
             usage_metadata={
                 "input_tokens": 223,
-                "output_tokens": 21,
-                "total_tokens": 244,
+                "output_tokens": 28,
+                "total_tokens": 251,
                 "input_token_details": {
                     "audio": 0,
                     "cache_read": 0,
@@ -57,11 +57,57 @@
         ToolMessage(
             content="nickith ordered chocolate for Rs. 500\nnickith ordered strawberry for Rs. 600",
             name="fetch_user_preference",
-            id="4508a0e2-2f00-4f24-ae1e-7560276834d7",
-            tool_call_id="call_ystjHZxTvPCfh3BuKUpYnGLM",
+            id="21b9ab7b-dee3-46d2-918a-23030a550cac",
+            tool_call_id="call_AEsim0UxLbtxdgGG0SSI70Lj",
+        ),
+        AIMessage(
+            content="chocolate",
+            additional_kwargs={"refusal": None},
+            response_metadata={
+                "token_usage": {
+                    "completion_tokens": 5,
+                    "prompt_tokens": 189,
+                    "total_tokens": 194,
+                    "completion_tokens_details": {
+                        "accepted_prediction_tokens": 0,
+                        "audio_tokens": 0,
+                        "reasoning_tokens": 0,
+                        "rejected_prediction_tokens": 0,
+                        "text_tokens": None,
+                    },
+                    "prompt_tokens_details": {
+                        "audio_tokens": 0,
+                        "cache_write_tokens": 0,
+                        "cached_tokens": 0,
+                        "image_tokens": None,
+                        "text_tokens": None,
+                    },
+                },
+                "model_provider": "openai",
+                "model_name": "gpt-5.6-luna",
+                "system_fingerprint": None,
+                "id": "chatcmpl-EM550yO2x6OpIupR39OMMLCCVZh9m",
+                "service_tier": "default",
+                "finish_reason": "stop",
+                "logprobs": None,
+            },
+            id="lc_run--01a0849f-d176-7b01-b7fa-8e976bcacab9-0",
+            tool_calls=[],
+            invalid_tool_calls=[],
+            usage_metadata={
+                "input_tokens": 189,
+                "output_tokens": 5,
+                "total_tokens": 194,
+                "input_token_details": {
+                    "audio": 0,
+                    "cache_read": 0,
+                    "cache_creation": 0,
+                },
+                "output_token_details": {"audio": 0, "reasoning": 0},
+            },
         ),
     ],
-    "desired_flavour": "",
+    "desired_flavour": "chocolate",
     "avg_price": "",
     "federated_response": "",
 }
