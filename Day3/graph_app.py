@@ -68,6 +68,21 @@ class AgentState(TypedDict):
     desired_flavour: str
     avg_price : str
     federated_response: str
+    preference_context: str
+    inventory_context: str
+    ragas_score: str
+
+def save_preference_tool_response(state: AgentState):
+    tool_response = state["messages"][-1].content
+    return {
+        "preference_context": tool_response
+    }
+
+def save_inventory_tool_response(state: AgentState):
+    tool_response = state["messages"][-1].content
+    return {
+        "inventory_context": tool_response
+    }
 
 def preference_llm_node(state: AgentState):    
     messages_to_send = [
@@ -219,6 +234,8 @@ builder.add_node("xtract_flav", xtract_flavour_node)
 builder.add_node("inv_node", inventory_llm_node)
 builder.add_node("inv_tool", inventory_tool_node)
 builder.add_node("fed_node", federated_llm_node)
+builder.add_node("save_pref_result", save_preference_tool_response)
+builder.add_node("save_inv_result", save_inventory_tool_response)
 
 builder.add_edge(START, "pref_llm")
 builder.add_conditional_edges(
@@ -229,7 +246,10 @@ builder.add_conditional_edges(
         "end" : END
     }
 )
-builder.add_edge("pref_tool", "xtract_flav")
+# builder.add_edge("pref_tool", "xtract_flav")
+builder.add_edge("pref_tool", "save_pref_result")
+builder.add_edge("save_pref_result", "xtract_flav")
+
 builder.add_edge("xtract_flav", "inv_node")
 builder.add_conditional_edges(
     "inv_node",
@@ -239,7 +259,8 @@ builder.add_conditional_edges(
         "end" : END
     }
 )
-builder.add_edge("inv_tool", "fed_node")
+builder.add_edge("inv_tool", "save_inv_result")
+builder.add_edge("save_inv_result", "fed_node")
 builder.add_edge("fed_node", END)
 app = builder.compile()
 

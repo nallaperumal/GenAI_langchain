@@ -247,3 +247,103 @@ final_state = app.invoke(initial_input)
 </style>
 
 
+---
+
+# Ragas
+
+```py
+data = {
+    "question": [
+        "What is the capital of France?"
+    ],
+    "answer": [
+        "The capital of France is Paris."
+    ],
+    "contexts": [
+        [
+            "Paris is the capital and largest city of France."
+        ]
+    ],
+    "ground_truth": [
+        "Paris is the capital of France."
+    ]
+}
+dataset = Dataset.from_dict(data)
+llm = ChatOpenAI( model="gpt-5.6-luna", reasoning_effort="none")
+result = evaluate(
+    dataset,
+    metrics=[
+        faithfulness,
+        answer_relevancy,
+        context_precision,
+        context_recall,
+    ],
+    llm=llm
+)
+print(result)
+```
+
+---
+
+```py
+def ragas_evaluation_node(state: AgentState):
+    question = f"""
+    Can user {state["user"]} get their preferred cake flavour?
+    """
+    answer = state["federated_response"]
+    contexts = [
+        state["preference_tool_response"],
+        state["inventory_tool_response"]
+    ]
+
+    dataset = Dataset.from_dict({
+        "user_input": [question],
+        "response": [answer],
+        "retrieved_contexts": [contexts],
+    })
+
+    result = evaluate(
+        dataset,
+        metrics=[
+            faithfulness,
+            answer_relevancy
+        ],
+        llm=ragas_llm
+    )
+
+    return {
+        "ragas_score": str(result)
+    }
+```
+
+---
+
+```py
+builder.add_node("fed_node", federated_llm_node)
+builder.add_node("ragas_eval", ragas_evaluation_node)
+```
+
+```py
+builder.add_edge("fed_node", "ragas_eval")
+builder.add_edge("ragas_eval", END)
+```
+
+---
+
+# Answer correctness (needs Ground truth)
+
+```py
+ground_truth = """
+Yes. Nickith's preferred flavour is chocolate, and chocolate is
+currently available in inventory.
+"""
+
+dataset = Dataset.from_dict({
+    "user_input": [question],
+    "response": [answer],
+    "retrieved_contexts": [contexts],
+    "reference": [ground_truth],
+})
+```
+
+
