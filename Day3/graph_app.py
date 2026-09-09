@@ -146,6 +146,34 @@ def inventory_llm_node(state: AgentState):
         "messages": [response]
     }
 
+def federated_llm_node(state: AgentState): 
+    preference = state["desired_flavour"]
+    last_message = state["messages"][-1]
+    user_name = state["user"]
+    inventory = last_message.content 
+    messages_to_send = [
+            {
+                "role": "system",
+                "content": """
+                          you are teh final federal llm. Based on the user preference and inventory. Based on these provide a proper response
+
+                            """
+            },
+            {
+                "role": "user",
+                "content": f"""Can the user {user_name} get flavour:- {preference} with inventory details {inventory}"""
+            }
+        ]
+    response = federated_llm.invoke(
+        messages_to_send
+    )
+    print("\n\n......federated LLM response:....\n\n")
+    print(response.content)
+    return {
+        "messages": [response],
+        "federated_response": response.content
+    }
+
 def inventory_router(state: AgentState):
     last_message = state["messages"][-1]
     if hasattr(last_message, "tool_calls") and last_message.tool_calls:
@@ -190,6 +218,8 @@ builder.add_node("pref_tool", preference_tool_node)
 builder.add_node("xtract_flav", xtract_flavour_node)
 builder.add_node("inv_node", inventory_llm_node)
 builder.add_node("inv_tool", inventory_tool_node)
+builder.add_node("fed_node", federated_llm_node)
+
 builder.add_edge(START, "pref_llm")
 builder.add_conditional_edges(
     "pref_llm",
@@ -209,7 +239,8 @@ builder.add_conditional_edges(
         "end" : END
     }
 )
-builder.add_edge("inv_tool", END)
+builder.add_edge("inv_tool", "fed_node")
+builder.add_edge("fed_node", END)
 app = builder.compile()
 
 initial_input = {"user":"nickith", "messages":[], "desired_flavour":"", "avg_price":"", "federated_response":""}
