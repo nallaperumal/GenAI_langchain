@@ -6,9 +6,9 @@
             additional_kwargs={"refusal": None},
             response_metadata={
                 "token_usage": {
-                    "completion_tokens": 28,
+                    "completion_tokens": 21,
                     "prompt_tokens": 223,
-                    "total_tokens": 251,
+                    "total_tokens": 244,
                     "completion_tokens_details": {
                         "accepted_prediction_tokens": 0,
                         "audio_tokens": 0,
@@ -27,25 +27,25 @@
                 "model_provider": "openai",
                 "model_name": "gpt-5.6-luna",
                 "system_fingerprint": None,
-                "id": "chatcmpl-EM54yAr7nXkfMbrIbZPuigaP0GusU",
+                "id": "chatcmpl-EM6dFgaRNn2sFkpnHsX138MWBLY23",
                 "service_tier": "default",
                 "finish_reason": "tool_calls",
                 "logprobs": None,
             },
-            id="lc_run--01a0849f-c816-7130-83ff-f015650ea3dd-0",
+            id="lc_run--01a084fa-db3c-7e30-b7c6-cc6636521a0d-0",
             tool_calls=[
                 {
                     "name": "fetch_user_preference",
                     "args": {"user_name": "nickith"},
-                    "id": "call_AEsim0UxLbtxdgGG0SSI70Lj",
+                    "id": "call_9m8XCGZOC8qWQFdtBUKlbYXN",
                     "type": "tool_call",
                 }
             ],
             invalid_tool_calls=[],
             usage_metadata={
                 "input_tokens": 223,
-                "output_tokens": 28,
-                "total_tokens": 251,
+                "output_tokens": 21,
+                "total_tokens": 244,
                 "input_token_details": {
                     "audio": 0,
                     "cache_read": 0,
@@ -57,8 +57,8 @@
         ToolMessage(
             content="nickith ordered chocolate for Rs. 500\nnickith ordered strawberry for Rs. 600",
             name="fetch_user_preference",
-            id="21b9ab7b-dee3-46d2-918a-23030a550cac",
-            tool_call_id="call_AEsim0UxLbtxdgGG0SSI70Lj",
+            id="c48091e6-0dc9-4652-9e7b-1cdabbcfefd3",
+            tool_call_id="call_9m8XCGZOC8qWQFdtBUKlbYXN",
         ),
         AIMessage(
             content="chocolate",
@@ -66,8 +66,8 @@
             response_metadata={
                 "token_usage": {
                     "completion_tokens": 5,
-                    "prompt_tokens": 189,
-                    "total_tokens": 194,
+                    "prompt_tokens": 62,
+                    "total_tokens": 67,
                     "completion_tokens_details": {
                         "accepted_prediction_tokens": 0,
                         "audio_tokens": 0,
@@ -86,18 +86,18 @@
                 "model_provider": "openai",
                 "model_name": "gpt-5.6-luna",
                 "system_fingerprint": None,
-                "id": "chatcmpl-EM550yO2x6OpIupR39OMMLCCVZh9m",
+                "id": "chatcmpl-EM6dGduRcp9OyXxdqpXH9gw36Yi4X",
                 "service_tier": "default",
                 "finish_reason": "stop",
                 "logprobs": None,
             },
-            id="lc_run--01a0849f-d176-7b01-b7fa-8e976bcacab9-0",
+            id="lc_run--01a084fa-e1b2-75c0-be4d-9aab24da539d-0",
             tool_calls=[],
             invalid_tool_calls=[],
             usage_metadata={
-                "input_tokens": 189,
+                "input_tokens": 62,
                 "output_tokens": 5,
-                "total_tokens": 194,
+                "total_tokens": 67,
                 "input_token_details": {
                     "audio": 0,
                     "cache_read": 0,
@@ -105,6 +105,65 @@
                 },
                 "output_token_details": {"audio": 0, "reasoning": 0},
             },
+        ),
+        AIMessage(
+            content="",
+            additional_kwargs={"refusal": None},
+            response_metadata={
+                "token_usage": {
+                    "completion_tokens": 21,
+                    "prompt_tokens": 197,
+                    "total_tokens": 218,
+                    "completion_tokens_details": {
+                        "accepted_prediction_tokens": 0,
+                        "audio_tokens": 0,
+                        "reasoning_tokens": 0,
+                        "rejected_prediction_tokens": 0,
+                        "text_tokens": None,
+                    },
+                    "prompt_tokens_details": {
+                        "audio_tokens": 0,
+                        "cache_write_tokens": 0,
+                        "cached_tokens": 0,
+                        "image_tokens": None,
+                        "text_tokens": None,
+                    },
+                },
+                "model_provider": "openai",
+                "model_name": "gpt-5.6-luna",
+                "system_fingerprint": None,
+                "id": "chatcmpl-EM6dHKL2FUhODMHCOP9GX5Zpjvej5",
+                "service_tier": "default",
+                "finish_reason": "tool_calls",
+                "logprobs": None,
+            },
+            id="lc_run--01a084fa-e623-7611-90ef-35a92edab7f7-0",
+            tool_calls=[
+                {
+                    "name": "fetch_inventory_data",
+                    "args": {"flavour_name": "chocolate"},
+                    "id": "call_WK0cI0q4MReWSh5IxMqfHyOi",
+                    "type": "tool_call",
+                }
+            ],
+            invalid_tool_calls=[],
+            usage_metadata={
+                "input_tokens": 197,
+                "output_tokens": 21,
+                "total_tokens": 218,
+                "input_token_details": {
+                    "audio": 0,
+                    "cache_read": 0,
+                    "cache_creation": 0,
+                },
+                "output_token_details": {"audio": 0, "reasoning": 0},
+            },
+        ),
+        ToolMessage(
+            content="Chocolate costs Rs.250 and available quantity is 2",
+            name="fetch_inventory_data",
+            id="b99de09e-3298-40a2-9234-5e0076391ec0",
+            tool_call_id="call_WK0cI0q4MReWSh5IxMqfHyOi",
         ),
     ],
     "desired_flavour": "chocolate",

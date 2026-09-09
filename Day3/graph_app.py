@@ -39,7 +39,7 @@ def fetch_user_preference(user_name: str) -> str:
 
 @tool
 def fetch_inventory_data(flavour_name: str) -> str:
-    """Fetches available flavours in the inventory.""" 
+    """Fetches available inventory data from the sql.""" 
     conn = sqlite3.connect("cake.db")
     cursor = conn.cursor()    
     try:       
@@ -113,6 +113,47 @@ def preference_router(state: AgentState):
     print("\nROUTER: No preference available -> END")
     return "end"
 
+def inventory_llm_node(state: AgentState): 
+    desired_flavour = state["desired_flavour"]   
+    messages_to_send = [
+            {
+                "role": "system",
+                "content": """
+                           You are the Inventory LLM.
+
+                            Your job is to check whether the requested cake flavour
+                            is available in inventory.
+
+                            You have access to the fetch_inventory_data tool.
+
+                            You MUST call fetch_inventory_data with the flavour name
+                            provided by the user.
+
+                            """
+            },
+            {
+                "role": "user",
+                "content": f"""check in the inventory for flavour:- {desired_flavour}"""
+            }
+        ]
+    response = inventory_llm_with_tools.invoke(
+        messages_to_send
+    )
+    print("\ninventory LLM response:")
+    print(response)
+
+    return {
+        "messages": [response]
+    }
+
+def inventory_router(state: AgentState):
+    last_message = state["messages"][-1]
+    if hasattr(last_message, "tool_calls") and last_message.tool_calls:
+        print("\nROUTER: Inventory LLM wants to call tool")
+        return "inv_tool"    
+    print("\nROUTER: No stock available -> END")
+    return "end"
+
 def xtract_flavour_node(state: AgentState):    
     messages = state["messages"]
     last_message = messages[-1]
@@ -130,7 +171,7 @@ def xtract_flavour_node(state: AgentState):
                 "content": f"""Find the cake flavour from:{tool_result}"""
             }
         ]
-    response = preference_llm_with_tools.invoke(
+    response = flavour_xtract_llm.invoke(
         messages_to_send
     )
     print("\nPreference LLM response:")
@@ -140,7 +181,6 @@ def xtract_flavour_node(state: AgentState):
         "messages": [response],
         "desired_flavour": response.content
     }
-
 preference_tool_node = ToolNode([fetch_user_preference])
 inventory_tool_node = ToolNode([fetch_inventory_data])
 
@@ -148,7 +188,8 @@ builder = StateGraph(AgentState)
 builder.add_node("pref_llm", preference_llm_node)
 builder.add_node("pref_tool", preference_tool_node)
 builder.add_node("xtract_flav", xtract_flavour_node)
-
+builder.add_node("inv_node", inventory_llm_node)
+builder.add_node("inv_tool", inventory_tool_node)
 builder.add_edge(START, "pref_llm")
 builder.add_conditional_edges(
     "pref_llm",
@@ -159,8 +200,16 @@ builder.add_conditional_edges(
     }
 )
 builder.add_edge("pref_tool", "xtract_flav")
-builder.add_edge("xtract_flav", END)
-
+builder.add_edge("xtract_flav", "inv_node")
+builder.add_conditional_edges(
+    "inv_node",
+    inventory_router,
+    {
+        "inv_tool" : "inv_tool",
+        "end" : END
+    }
+)
+builder.add_edge("inv_tool", END)
 app = builder.compile()
 
 initial_input = {"user":"nickith", "messages":[], "desired_flavour":"", "avg_price":"", "federated_response":""}
