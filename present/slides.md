@@ -2,7 +2,21 @@
 layout: fact
 ---
 
-# Welcome to Gen AI 
+# Multi-Agents
+
+---
+
+# Recap
+
+<v-clicks>
+
+- Ensemble-retriever
+- Re-ranking
+- LCEL chains
+- chain with RAG
+- Parallel chains
+
+</v-clicks>
 
 ---
 
@@ -10,230 +24,326 @@ layout: fact
 
 <v-clicks>
 
-- Basics of LLM
-- A Case Study
-- Setting up Python environment
-- Openai with python samples
-- Semantic search 
-- Hybrid search
-</v-clicks>
-
----
-layout: fact
----
-
-# Coding needed?
-
----
-
-# Why Coding Needed?
-
-<v-clicks>
-
-- Technical debt
-- Hallucination in production
-- Token cost
-- Ability the judge the quality of code
-
-</v-clicks>
----
-
-# Case Study 
-
-
-<v-clicks>
-
-- what is Bun (Software)?
-- It is Software runtime similar to Nodejs
-- It works with Javscript/TypeScript
-- Super fast
-- Written on Zig
-- Rewritten in Rust in May 2026
-- With around 64 agents in just 11 days 
-- 6500 commits costing 1,65,000 USD
+- Federated Agents
+- New Case Study
+- Langgraph with tool calls
+- Condiditional graph
+- Analyse the messages and state
 
 </v-clicks>
 
----
-
-# LLM
-
-<v-clicks>
-
-- AI is not new
-- Attention is all you need
-- Transformer Architecture
-- Temperature and top k
-- Refer [here](https://poloclub.github.io/transformer-explainer/)
-- and [here](https://bbycroft.net/llm)
-
-</v-clicks>
 
 ---
 
-# Tools
+# Case study
 
-<v-clicks>
-
-- Langchain
-- Langfuse
-- Chromadb
-
-</v-clicks>
+### Customer enquires
+- Bot will search the database with his past history
+- If available then it tries to fetch inventory based on his preference
+- Final, federated agent will prvide response
 
 ---
 
-# Langfuse
+# State
 
-<v-clicks>
-
-- Observability
-- Traceability
-- Test/evaluate
-- Opensource
-
-</v-clicks>
-
----
-
-# Let's code
-
-- Libraries
-```md
-langchain_openai
-dotenv
-```
-
-- Installation
-
-```sh
-pip install -r requirements.txt
-```
-
-- Environment creation
-```sh
-python -m venv my_env
-my_env\Scripts\activate
-```
-- .env
-```md {1|2-|*}  
-OPENAI_API_KEY=sk....
-
-LANGFUSE_SECRET_KEY="sk..."
-LANGFUSE_PUBLIC_KEY="pk..."
-LANGFUSE_BASE_URL="https://cloud.langfuse.com"
+```py {*|1,3|*} {lines: true}
+class AgentState(TypedDict):
+    user: str
+    messages: Annotated[list, add_messages]
+    desired_flavour: str
+    avg_price : str
+    federated_response: str
 
 ```
 
+
+<style>
+:deep(pre), :deep(code) {
+  font-size: 1.1rem !important;
+  line-height: 1.5 !important;
+}
+</style>
+
+----
+
+# Tool node
+
+```py {*|1-4|6-8|6,9-12|*} {lines: true}
+@tool
+def fetch_user_preference(user_name: str) -> str:
+    """Fetches a user's past orders of cake flavour and order value.""" 
+    conn = sqlite3.connect("cake.db")
+    cursor = conn.cursor()         
+    cursor.execute("SELECT user, flavour, price FROM orders WHERE 
+                    user = ? COLLATE NOCASE", (user_name,))
+    rows = cursor.fetchall()                   
+    if rows:
+        orderHistory = "\n".join([f"{itm[0]} ordered {itm[1]} for Rs. {itm[2]}"  
+                                    for itm in rows])            
+        return orderHistory
+    return f"No flavour data found for name: {user_name}"        
+    conn.close()
+```
+
+
+<style>
+:deep(pre), :deep(code) {
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+}
+</style>
+
 ---
 
-```py {1,4|2,6-8|10-|*} {lines:true}
-from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
+# Define LLM
 
-load_dotenv()
-
-llm = ChatOpenAI(
+```py
+preference_llm = ChatOpenAI(
     model="gpt-5.6-luna",
+    reasoning_effort="none"
 )
 
-response = llm.invoke("what is bun framework in Software?")
+inventory_llm = ChatOpenAI(
+    model="gpt-5.6-luna",
+    reasoning_effort="none"
+)
 
-print(response.content)
+federated_llm = ChatOpenAI(
+    model="gpt-5.6-luna",
+    reasoning_effort="none" 
+)
+```
+
+
+<style>
+:deep(pre), :deep(code) {
+  font-size: 1.2rem !important;
+  line-height: 1.5 !important;
+}
+</style>
+
+---
+
+# tool node
+
+```py {1-4|1-2,7-9|*} {lines: true}
+@tool
+def fetch_user_preference(user_name: str) -> str:
+    """Fetches a user's past orders of cake flavour and order value.""" 
+    conn = sqlite3.connect("cake.db")
+    ...
+
+preference_llm_with_tools = preference_llm.bind_tools(
+    [fetch_user_preference]
+)
+
+```
+
+
+<style>
+:deep(pre), :deep(code) {
+  font-size: 1.2rem !important;
+  line-height: 1.5 !important;
+}
+</style>
+
+---
+
+# Node
+
+```py {1-13|14-20|*} {lines: true}
+def preference_llm_node(state: AgentState):    
+    messages_to_send = [
+            {
+                "role": "system",
+                "content": """
+                            You are the Preference LLM...
+                            """
+            },
+            {
+              "role": "user",
+                "content": f"""Find the cake flavour preference for user:{state["user"]}"""
+            }
+        ]
+    response = preference_llm_with_tools.invoke(
+        messages_to_send
+    )
+    return {
+        "messages": [response],
+        "desired_flavour": response.content
+    }
+
+```
+
+<style>
+:deep(pre), :deep(code) {
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+}
+</style>
+
+
+---
+
+# Router node
+
+```py {1-7|1,5,8-|*} {lines: true}
+def preference_router(state: AgentState):
+    last_message = state["messages"][-1]
+    if hasattr(last_message, "tool_calls") and last_message.tool_calls:
+        print("\nROUTER: Preference LLM wants to call tool")
+        return "preference_tool"    
+    print("\nROUTER: No preference available -> END")
+    return "end"
+
+
+preference_tool_node = ToolNode(
+    [fetch_user_preference]
+)
+
+builder.add_node("preference_tool", preference_tool_node)
+
+```
+
+
+<style>
+:deep(pre), :deep(code) {
+  font-size: 1.1rem !important;
+  line-height: 1.5 !important;
+}
+</style>
+
+
+---
+
+# graph build
+
+```py {1-4|5-13|14-|*} {lines: true}
+builder = StateGraph(AgentState)
+builder.add_node(   "preference_llm",    preference_llm_node)
+builder.add_node(    "preference_tool",    preference_tool_node)
+...
+builder.add_edge(    START,    "preference_llm")
+builder.add_conditional_edges(
+    "preference_llm",
+    preference_router,
+    {
+        "preference_tool": "preference_tool",
+        "end": END
+    }
+)
+...
+app = builder.compile()
+final_state = app.invoke(initial_input)
+
+```
+
+
+<style>
+:deep(pre), :deep(code) {
+  font-size: 1.1rem !important;
+  line-height: 1.5 !important;
+}
+</style>
+
+
+---
+
+# Ragas
+
+```py
+data = {
+    "question": [
+        "What is the capital of France?"
+    ],
+    "answer": [
+        "The capital of France is Paris."
+    ],
+    "contexts": [
+        [
+            "Paris is the capital and largest city of France."
+        ]
+    ],
+    "ground_truth": [
+        "Paris is the capital of France."
+    ]
+}
+dataset = Dataset.from_dict(data)
+llm = ChatOpenAI( model="gpt-5.6-luna", reasoning_effort="none")
+result = evaluate(
+    dataset,
+    metrics=[
+        faithfulness,
+        answer_relevancy,
+        context_precision,
+        context_recall,
+    ],
+    llm=llm
+)
+print(result)
 ```
 
 ---
-layout: fact
----
 
-# RAG
+```py
+def ragas_evaluation_node(state: AgentState):
+    question = f"""
+    Can user {state["user"]} get their preferred cake flavour?
+    """
+    answer = state["federated_response"]
+    contexts = [
+        state["preference_tool_response"],
+        state["inventory_tool_response"]
+    ]
 
----
+    dataset = Dataset.from_dict({
+        "user_input": [question],
+        "response": [answer],
+        "retrieved_contexts": [contexts],
+    })
 
-# Reading comprehension
+    result = evaluate(
+        dataset,
+        metrics=[
+            faithfulness,
+            answer_relevancy
+        ],
+        llm=ragas_llm
+    )
 
-<v-clicks>
-
-- Passage with 3 or 4 paragraphs
-- 4 or 5 questions given
-- Quesions can be simple or tricky
-
-</v-clicks>
-
----
-
-# Challenges in RAG
-
-<v-clicks>
-
-- Huge content
-- Cost of tokens
-- Hallucinations with large data
-
-</v-clicks>
-
----
-
-# Steps involved in RAG
-
-<v-clicks>
-
-- Chunking
-- Embedding Conversion
-- Retrieval (or Hybrid Search)
-- Context setup
-
-</v-clicks>
+    return {
+        "ragas_score": str(result)
+    }
+```
 
 ---
 
-# Chunking Strategy
+```py
+builder.add_node("fed_node", federated_llm_node)
+builder.add_node("ragas_eval", ragas_evaluation_node)
+```
 
-<v-clicks>
-
-- Fixed Size Chunking
-- Recursive chunking
-- Document structure aware-chunking
-- Semantic Chunking
-- Agentic chunking
-
-</v-clicks>
+```py
+builder.add_edge("fed_node", "ragas_eval")
+builder.add_edge("ragas_eval", END)
+```
 
 ---
 
-# Embeddings
+# Answer correctness (needs Ground truth)
 
-<v-clicks>
+```py
+ground_truth = """
+Yes. Nickith's preferred flavour is chocolate, and chocolate is
+currently available in inventory.
+"""
 
-- Non-deterministic
-- Similarty rather than equality
-- Dimensionality
-- Cosine similarity/euclidean distance 
-
-</v-clicks>
-
----
-
-# Choosing the right embeddings
-
-<v-clicks>
-
-- Open source sentence transformers
-- Open AI sentence transformers
-- Cohere Embddings 
-- Google Embeddings 2
-
-</v-clicks>
+dataset = Dataset.from_dict({
+    "user_input": [question],
+    "response": [answer],
+    "retrieved_contexts": [contexts],
+    "reference": [ground_truth],
+})
+```
 
 
----
-
-# Retrieval
-
-<v-clicks>
-
-- Dense retieval (Semantic)
-- Sparse retrieval (BM26 type)
-- Hybrid retrieval
-
-</v-clicks>

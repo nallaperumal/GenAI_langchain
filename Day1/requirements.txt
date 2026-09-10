@@ -1,0 +1,8 @@
+langchain-openai
+langchain
+dotenv
+langchain-text-splitters
+openai
+langfuse
+langchain-chroma
+langgraph
