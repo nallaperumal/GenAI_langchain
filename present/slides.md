@@ -347,3 +347,143 @@ dataset = Dataset.from_dict({
 ```
 
 
+# With LCEL
+
+```
+from langchain_core.output_parsers import StrOutputParser
+
+chain = prompt_template | llm | StrOutputParser()
+resp = chain.invoke({"context":ctxt_txt, "question":user_msg})
+```
+<style>
+/* Target pre or code elements inside the slide */
+:deep(pre), :deep(code) {
+  font-size: 1.25rem !important;
+  line-height: 1.5 !important;
+}
+</style>
+---
+
+# Structured output
+
+```py
+from pydantic import BaseModel, Field
+
+class DesiredResponse(BaseModel):
+    answer: str = Field(description="Direct answer based strictly on the provided context")
+    confidence: float = Field(description="Confidence level: 0 to 5")
+    found_in_context: bool = Field(description="True if context contains the answer, False otherwise")
+
+structured_llm = llm.with_structured_output(DesiredResponse)
+...
+
+chain = prompt_template | structured_llm | StrOutputParser()
+```
+
+
+<style>
+/* Target pre or code elements inside the slide */
+:deep(pre), :deep(code) {
+  font-size: 1.1rem !important;
+  line-height: 1.5 !important;
+}
+</style>
+---
+
+# guard rails
+
+```py 
+def execute_guarded_chain(resp: DesiredResponse):
+    if resp.confidence < 0.6:
+        resp.answer = "I am unable to answer this question based strictly on the provided context."
+        resp.found_in_context = False
+    return resp
+...
+chain =  conversation_template | structured_llm | RunnableLambda(execute_guarded_chain)
+
+print(response.answer)
+print(response.found_in_context)
+```
+
+
+<style>
+/* Target pre or code elements inside the slide */
+:deep(pre), :deep(code) {
+  font-size: 1.1rem !important;
+  line-height: 1.5 !important;
+}
+</style>
+---
+
+# RAG and LCEL
+
+```py
+context_bun = ""
+
+fileMan  = FileManager()
+context_bun = fileMan.ReadFromFile()
+embedMan = EmbeddingManager()
+
+chunk_list = embedMan.GetChunks(context_bun)
+embedMan.convert_txt_to_embed(chunk_list)
+res = embedMan.search("what is bun?")
+
+context_bun  = "\n".join([txt.page_content for txt in res])
+```
+
+
+<style>
+/* Target pre or code elements inside the slide */
+:deep(pre), :deep(code) {
+  font-size: 1.2rem !important;
+  line-height: 1.5 !important;
+}
+</style>
+
+---
+
+# Dual context
+
+```py
+res1 = embedMan.search("what is bun?", 3)
+res2 = embedMan.search("what is bun?", 5)
+
+ctxt_txt1 = "\n".join([txt.page_content for txt in res1])
+ctxt_txt2 = "\n".join([txt.page_content for txt in res2])
+```
+
+
+<style>
+/* Target pre or code elements inside the slide */
+:deep(pre), :deep(code) {
+  font-size: 1.1rem !important;
+  line-height: 1.5 !important;
+}
+</style>
+
+---
+
+# Parallel chain
+
+```py
+# resp = chain.invoke({'context': ctxt_txt, 'question':"what is bun?"})
+parallel_chain = RunnableParallel(
+ resp1 = RunnableLambda(lambda x: chain.invoke({'context': x['ctxt1'], 'question': x['question']})),
+ resp2 = RunnableLambda(lambda x: chain.invoke({'context': x['ctxt2'], 'question': x['question']}))
+    )
+
+
+resp = parallel_chain.invoke({
+        'ctxt1': ctxt_txt1,
+        'ctxt2': ctxt_txt2,
+        'question': "what is bun?"
+    })
+```
+
+<style>
+/* Target pre or code elements inside the slide */
+:deep(pre), :deep(code) {
+  font-size: 1.1rem !important;
+  line-height: 1.5 !important;
+}
+</style>
